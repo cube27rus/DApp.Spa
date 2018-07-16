@@ -1,7 +1,9 @@
 import { Http, Headers, RequestOptions, Response } from '@angular/http';
 import { Injectable } from '@angular/core';
 import { map, delay, catchError } from 'rxjs/operators';
-import { Observable, observable } from 'rxjs';
+import { throwError } from 'rxjs';
+import { Observable } from 'rxjs/internal/Observable';
+
 
 @Injectable({
   providedIn: 'root'
@@ -22,7 +24,7 @@ export class AuthService {
   }
 
   register(model: any) {
-    return this.http.post(this.baseUrl + 'register', model,  this.requestOptions());
+    return this.http.post(this.baseUrl + 'register', model,  this.requestOptions()).pipe(catchError(this.handleError));
   }
 
   private requestOptions() {
@@ -30,15 +32,14 @@ export class AuthService {
     return new RequestOptions({ headers: headers});
   }
 
-  private handleError(error: any) {
-    const applicationError = error.headers.get('Application-Error');
+  private handleError(err: any) {
+    const applicationError = err.headers.get('Application-Error');
+    console.log(applicationError);
     if (applicationError) {
-      return Observable.throw(applicationError);
+      return throwError(applicationError);
     }
-    const serverError = error.json();
-
+    const serverError = err.json();
     let modelStateErrors = '';
-
     if (serverError) {
       for (const key in serverError) {
         if (serverError[key]) {
@@ -46,7 +47,10 @@ export class AuthService {
         }
       }
     }
-    return Observable.throw(modelStateErrors || 'Server error');
+    console.log(serverError);
+    return throwError(
+      modelStateErrors || 'Server error'
+    );
   }
 
 }
